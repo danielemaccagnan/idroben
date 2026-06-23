@@ -552,8 +552,8 @@
         </div>
         <div class="field">
           <label for="f-foto">Foto dei lavori da fare <span class="opt">(facoltativo)</span></label>
-          <input id="f-foto" name="Foto" type="file" accept="image/*" multiple />
-          <small class="field-hint">Puoi allegare una o più foto. Se sono pesanti o molte, conviene inviarle su WhatsApp.</small>
+          <input id="f-foto" name="Foto[]" type="file" accept="image/*" multiple />
+          <small class="field-hint">Puoi allegare qualche foto (massimo 10&nbsp;MB in totale). Per più foto o foto pesanti, inviale su WhatsApp.</small>
         </div>
         <button class="btn btn-primary" id="sendBtn" type="submit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
@@ -746,6 +746,22 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     try{ statusEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){}
     if(history.replaceState) history.replaceState(null, '', page); // ripulisce l'URL
   }
+
+  // limite allegati FormSubmit: 10MB totali -> se superato, blocca e suggerisce WhatsApp
+  const MAXB = 9.5 * 1024 * 1024;
+  const fileInput = document.getElementById('f-foto');
+  form.addEventListener('submit', function(e){
+    if(fileInput && fileInput.files && fileInput.files.length){
+      let tot = 0;
+      for(let i=0; i<fileInput.files.length; i++) tot += fileInput.files[i].size;
+      if(tot > MAXB && statusEl){
+        e.preventDefault();
+        statusEl.innerHTML = 'Le foto superano il limite di 10&nbsp;MB del modulo. Inviane di meno, oppure mandale tutte su <a href="https://wa.me/' + BIZ.phoneIntl + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:700">WhatsApp</a>.';
+        statusEl.className = 'form-status show err';
+        try{ statusEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(_){}
+      }
+    }
+  });
 })();
 
 </script>
