@@ -252,6 +252,12 @@
   .form-status.ok{color:#0F7B57}
   .form-status.err{color:#C0392B}
   #sendBtn[disabled]{opacity:.6;cursor:default}
+  .req{color:var(--blue);font-weight:700}
+  .opt{color:var(--muted);font-weight:400;font-size:.82em}
+  .field-hint{display:block;margin-top:7px;font-size:.8rem;color:var(--muted);line-height:1.45}
+  .field input[type="file"]{padding:10px 12px;font-size:.9rem;color:var(--slate);cursor:pointer}
+  .field input[type="file"]::file-selector-button{font-family:var(--body);font-weight:600;font-size:.85rem;color:#fff;background:var(--blue);border:none;border-radius:8px;padding:9px 14px;margin-right:12px;cursor:pointer;transition:background .18s}
+  .field input[type="file"]::file-selector-button:hover{background:var(--blue-dk)}
 
   /* ============ FOOTER ============ */
   footer{background:var(--deep);color:#a9c4d2;padding:64px 0 30px}
@@ -510,20 +516,26 @@
 
     <div class="form-card reveal">
       <h3>Scrivici la tua richiesta</h3>
-      <p class="sub">Compila i campi: la richiesta arriva direttamente a Idroben. Ti rispondiamo in giornata.</p>
-      <form id="quoteForm" novalidate>
+      <p class="sub">Compila i campi: la richiesta arriva direttamente a Idroben, ti rispondiamo in giornata. I campi con <span class="req">*</span> sono obbligatori.</p>
+      <form id="quoteForm" action="https://formsubmit.co/idrobenwashing@gmail.com" method="POST" enctype="multipart/form-data">
+        <!-- impostazioni FormSubmit (destinazione e ritorno valorizzati via JS dal blocco BIZ) -->
+        <input type="hidden" name="_subject" value="Nuova richiesta di preventivo — sito Idroben" />
+        <input type="hidden" name="_template" value="table" />
+        <input type="hidden" name="_captcha" value="false" />
+        <input type="hidden" name="_next" id="fsNext" value="" />
+        <input type="hidden" name="_url" id="fsUrl" value="" />
         <!-- anti-spam: non rimuovere -->
         <input type="text" name="_honey" tabindex="-1" autocomplete="off" style="display:none" aria-hidden="true" />
         <div class="field">
-          <label for="f-nome">Nome</label>
+          <label for="f-nome">Nome <span class="req">*</span></label>
           <input id="f-nome" name="Nome" type="text" placeholder="Il tuo nome" required />
         </div>
         <div class="field">
-          <label for="f-tel">Telefono</label>
+          <label for="f-tel">Telefono <span class="req">*</span></label>
           <input id="f-tel" name="Telefono" type="tel" placeholder="Il tuo numero" required />
         </div>
         <div class="field">
-          <label for="f-serv">Cosa devi pulire?</label>
+          <label for="f-serv">Cosa devi pulire? <span class="opt">(facoltativo)</span></label>
           <select id="f-serv" name="Servizio">
             <option value="">Seleziona un servizio…</option>
             <option>Piazzali e vialetti</option>
@@ -535,8 +547,13 @@
           </select>
         </div>
         <div class="field">
-          <label for="f-msg">Messaggio</label>
+          <label for="f-msg">Messaggio <span class="opt">(facoltativo)</span></label>
           <textarea id="f-msg" name="Messaggio" placeholder="Descrivi superficie, dimensioni indicative e zona…"></textarea>
+        </div>
+        <div class="field">
+          <label for="f-foto">Foto dei lavori da fare <span class="opt">(facoltativo)</span></label>
+          <input id="f-foto" name="Foto" type="file" accept="image/*" multiple />
+          <small class="field-hint">Puoi allegare una o più foto. Se sono pesanti o molte, conviene inviarle su WhatsApp.</small>
         </div>
         <button class="btn btn-primary" id="sendBtn" type="submit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
@@ -708,64 +725,27 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
   measure();
 })();
 
-/* --- modulo preventivi -> email (FormSubmit, senza chiave), con ripiego WhatsApp --- */
+/* --- modulo preventivi -> email (FormSubmit, invio classico con allegati foto) --- */
 (function(){
   const form = document.getElementById('quoteForm');
-  const btn = document.getElementById('sendBtn');
-  const btnLabel = btn.querySelector('span');
+  if(!form) return;
+  const page = location.origin + location.pathname;
+
+  // destinazione (dal blocco BIZ), URL di ritorno e pagina del form
+  if(BIZ.email) form.setAttribute('action', 'https://formsubmit.co/' + encodeURIComponent(BIZ.email));
+  const next = document.getElementById('fsNext');
+  const url  = document.getElementById('fsUrl');
+  if(next) next.value = page + '?inviato=1';
+  if(url)  url.value  = page;
+
+  // dopo l'invio FormSubmit riporta qui con ?inviato=1 -> mostra la conferma
   const statusEl = document.getElementById('formStatus');
-  const $ = id => document.getElementById(id);
-
-  function setStatus(msg, type){
-    statusEl.textContent = msg;
-    statusEl.className = 'form-status show' + (type ? ' '+type : '');
+  if(statusEl && location.search.indexOf('inviato=1') !== -1){
+    statusEl.textContent = 'Richiesta inviata! Ti ricontattiamo a breve.';
+    statusEl.className = 'form-status show ok';
+    try{ statusEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){}
+    if(history.replaceState) history.replaceState(null, '', page); // ripulisce l'URL
   }
-  function waFallback(){
-    let t = "Ciao " + BIZ.name + "! Vorrei un preventivo.";
-    const nome=$('f-nome').value.trim(), tel=$('f-tel').value.trim(), serv=$('f-serv').value, msg=$('f-msg').value.trim();
-    if(nome) t += "\nNome: " + nome;
-    if(tel)  t += "\nTelefono: " + tel;
-    if(serv) t += "\nServizio: " + serv;
-    if(msg)  t += "\nDettagli: " + msg;
-    window.open("https://wa.me/" + BIZ.phoneIntl + "?text=" + encodeURIComponent(t), "_blank", "noopener");
-  }
-
-  form.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    if(form.querySelector('[name="_honey"]').value) return;               // anti-spam
-    if(!form.checkValidity()){ form.reportValidity(); setStatus('Inserisci almeno nome e telefono.', 'err'); return; }
-
-    // Nessuna email impostata -> invia via WhatsApp
-    if(!BIZ.email){
-      setStatus('Ti portiamo su WhatsApp per inviare la richiesta…', 'ok');
-      waFallback();
-      return;
-    }
-
-    const data = new FormData(form);
-    data.append('_subject', 'Nuova richiesta di preventivo — sito Idroben');
-    data.append('_template', 'table');
-    data.append('_captcha', 'false');
-    data.append('_url', location.origin + location.pathname); // pagina esatta del form (necessario su GitHub Pages per attivare/consegnare)
-
-    const original = btnLabel.textContent;
-    btn.disabled = true; btnLabel.textContent = 'Invio in corso…'; setStatus('', '');
-    try{
-      const res = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(BIZ.email), {
-        method:'POST', headers:{ 'Accept':'application/json' }, body:data
-      });
-      const out = await res.json();
-      if(out.success === true || out.success === 'true'){
-        setStatus('Richiesta inviata! Ti ricontattiamo a breve.', 'ok'); form.reset();
-      } else {
-        setStatus('Invio non riuscito. Riprova o scrivici su WhatsApp.', 'err');
-      }
-    }catch(err){
-      setStatus('Connessione assente. Riprova o scrivici su WhatsApp.', 'err');
-    }finally{
-      btn.disabled = false; btnLabel.textContent = original;
-    }
-  });
 })();
 
 </script>
