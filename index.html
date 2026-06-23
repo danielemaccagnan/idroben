@@ -258,6 +258,8 @@
   .field input[type="file"]{padding:10px 12px;font-size:.9rem;color:var(--slate);cursor:pointer}
   .field input[type="file"]::file-selector-button{font-family:var(--body);font-weight:600;font-size:.85rem;color:#fff;background:var(--blue);border:none;border-radius:8px;padding:9px 14px;margin-right:12px;cursor:pointer;transition:background .18s}
   .field input[type="file"]::file-selector-button:hover{background:var(--blue-dk)}
+  .field .file-slot{display:block;margin-bottom:8px}
+  .field .file-slot:last-of-type{margin-bottom:0}
 
   /* ============ FOOTER ============ */
   footer{background:var(--deep);color:#a9c4d2;padding:64px 0 30px}
@@ -551,9 +553,13 @@
           <textarea id="f-msg" name="Messaggio" placeholder="Descrivi superficie, dimensioni indicative e zona…"></textarea>
         </div>
         <div class="field">
-          <label for="f-foto">Foto dei lavori da fare <span class="opt">(facoltativo)</span></label>
-          <input id="f-foto" name="Foto[]" type="file" accept="image/*" multiple />
-          <small class="field-hint">Puoi allegare qualche foto (massimo 10&nbsp;MB in totale). Per più foto o foto pesanti, inviale su WhatsApp.</small>
+          <label>Foto dei lavori da fare <span class="opt">(facoltativo, fino a 5)</span></label>
+          <input id="f-foto1" name="Foto 1" type="file" accept="image/*" class="file-slot" aria-label="Foto 1" />
+          <input id="f-foto2" name="Foto 2" type="file" accept="image/*" class="file-slot" aria-label="Foto 2" />
+          <input id="f-foto3" name="Foto 3" type="file" accept="image/*" class="file-slot" aria-label="Foto 3" />
+          <input id="f-foto4" name="Foto 4" type="file" accept="image/*" class="file-slot" aria-label="Foto 4" />
+          <input id="f-foto5" name="Foto 5" type="file" accept="image/*" class="file-slot" aria-label="Foto 5" />
+          <small class="field-hint">Fino a 5 foto, massimo 10&nbsp;MB in totale. Per più foto o foto pesanti, <a href="#" data-biz="wa-link" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">inviale su WhatsApp</a>.</small>
         </div>
         <button class="btn btn-primary" id="sendBtn" type="submit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
@@ -749,17 +755,17 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 
   // limite allegati FormSubmit: 10MB totali -> se superato, blocca e suggerisce WhatsApp
   const MAXB = 9.5 * 1024 * 1024;
-  const fileInput = document.getElementById('f-foto');
+  const fileInputs = form.querySelectorAll('input[type="file"]');
   form.addEventListener('submit', function(e){
-    if(fileInput && fileInput.files && fileInput.files.length){
-      let tot = 0;
-      for(let i=0; i<fileInput.files.length; i++) tot += fileInput.files[i].size;
-      if(tot > MAXB && statusEl){
-        e.preventDefault();
-        statusEl.innerHTML = 'Le foto superano il limite di 10&nbsp;MB del modulo. Inviane di meno, oppure mandale tutte su <a href="https://wa.me/' + BIZ.phoneIntl + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:700">WhatsApp</a>.';
-        statusEl.className = 'form-status show err';
-        try{ statusEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(_){}
-      }
+    let tot = 0;
+    fileInputs.forEach(function(inp){
+      if(inp.files){ for(let i=0;i<inp.files.length;i++) tot += inp.files[i].size; }
+    });
+    if(tot > MAXB && statusEl){
+      e.preventDefault();
+      statusEl.innerHTML = 'Le foto superano il limite di 10&nbsp;MB del modulo. Inviane di meno, oppure mandale tutte su <a href="https://wa.me/' + BIZ.phoneIntl + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:700">WhatsApp</a>.';
+      statusEl.className = 'form-status show err';
+      try{ statusEl.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(_){}
     }
   });
 })();
