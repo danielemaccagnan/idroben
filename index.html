@@ -746,6 +746,7 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
     data.append('_subject', 'Nuova richiesta di preventivo — sito Idroben');
     data.append('_template', 'table');
     data.append('_captcha', 'false');
+    data.append('_url', location.origin + location.pathname); // pagina esatta del form (necessario su GitHub Pages per attivare/consegnare)
 
     const original = btnLabel.textContent;
     btn.disabled = true; btnLabel.textContent = 'Invio in corso…'; setStatus('', '');
