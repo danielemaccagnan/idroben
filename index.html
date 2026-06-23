@@ -247,6 +247,11 @@
   .field textarea{resize:vertical;min-height:88px}
   .form-card .btn{width:100%;margin-top:6px;padding:15px}
   .form-note{margin-top:14px;font-size:.82rem;color:var(--muted);text-align:center}
+  .form-status{margin-top:14px;font-size:.92rem;font-weight:600;text-align:center;display:none}
+  .form-status.show{display:block}
+  .form-status.ok{color:#0F7B57}
+  .form-status.err{color:#C0392B}
+  #sendBtn[disabled]{opacity:.6;cursor:default}
 
   /* ============ FOOTER ============ */
   footer{background:var(--deep);color:#a9c4d2;padding:64px 0 30px}
@@ -505,36 +510,41 @@
 
     <div class="form-card reveal">
       <h3>Scrivici la tua richiesta</h3>
-      <p class="sub">Compila i campi: prepariamo il messaggio e lo invii con un clic su WhatsApp.</p>
-      <div class="field">
-        <label for="f-nome">Nome</label>
-        <input id="f-nome" type="text" placeholder="Il tuo nome" />
-      </div>
-      <div class="field">
-        <label for="f-tel">Telefono</label>
-        <input id="f-tel" type="tel" placeholder="Il tuo numero" />
-      </div>
-      <div class="field">
-        <label for="f-serv">Cosa devi pulire?</label>
-        <select id="f-serv">
-          <option value="">Seleziona un servizio…</option>
-          <option>Piazzali e vialetti</option>
-          <option>Facciate e muri</option>
-          <option>Terrazzi e pavimenti</option>
-          <option>Lavaggi commerciali</option>
-          <option>Pulizia generale con idropulitrice</option>
-          <option>Altro</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="f-msg">Messaggio</label>
-        <textarea id="f-msg" placeholder="Descrivi superficie, dimensioni indicative e zona…"></textarea>
-      </div>
-      <button class="btn btn-wa" id="sendWa">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Z"/></svg>
-        Invia su WhatsApp
-      </button>
-      <p class="form-note" data-biz="email-note">Preferisci l'email? <a data-biz="email-link" href="mailto:info@aquaprocomo.it" style="color:var(--blue);font-weight:600">Scrivici qui</a></p>
+      <p class="sub">Compila i campi: la richiesta arriva direttamente a Idroben. Ti rispondiamo in giornata.</p>
+      <form id="quoteForm" novalidate>
+        <!-- anti-spam: non rimuovere -->
+        <input type="text" name="_honey" tabindex="-1" autocomplete="off" style="display:none" aria-hidden="true" />
+        <div class="field">
+          <label for="f-nome">Nome</label>
+          <input id="f-nome" name="Nome" type="text" placeholder="Il tuo nome" required />
+        </div>
+        <div class="field">
+          <label for="f-tel">Telefono</label>
+          <input id="f-tel" name="Telefono" type="tel" placeholder="Il tuo numero" required />
+        </div>
+        <div class="field">
+          <label for="f-serv">Cosa devi pulire?</label>
+          <select id="f-serv" name="Servizio">
+            <option value="">Seleziona un servizio…</option>
+            <option>Piazzali e vialetti</option>
+            <option>Facciate e muri</option>
+            <option>Terrazzi e pavimenti</option>
+            <option>Lavaggi commerciali</option>
+            <option>Pulizia generale con idropulitrice</option>
+            <option>Altro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-msg">Messaggio</label>
+          <textarea id="f-msg" name="Messaggio" placeholder="Descrivi superficie, dimensioni indicative e zona…"></textarea>
+        </div>
+        <button class="btn btn-primary" id="sendBtn" type="submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
+          <span>Invia richiesta</span>
+        </button>
+        <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+      </form>
+      <p class="form-note">Preferisci WhatsApp? <a data-biz="wa-link" href="#" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">Scrivici qui</a></p>
     </div>
   </div>
 </section>
@@ -582,12 +592,19 @@ const BIZ = {
   name:    "Idroben",                       // nome dell'attività
   phone:   "331 736 1702",                  // numero come va mostrato
   phoneIntl:"393317361702",                 // stesso numero formato internazionale, senza + né spazi
-  email:   "",                              // nessuna email fornita: lascia "" per nasconderla, oppure inseriscila
+  email:   "idrobenwashing@gmail.com",      // email dell'attività
   areas:   "Como e dintorni — raggio di 50 km", // zona servita
   hours:   "Lun–Sab, 8:00–19:00",           // orari DI ESEMPIO: modifica con i tuoi
   instagram:"idroben_washing",              // handle Instagram (senza @); lascia "" per nasconderlo
   vat:     "",                              // inserisci la P.IVA (per legge va mostrata sui siti commerciali in Italia)
   waMessage:"Ciao Idroben! Ho visto il sito e vorrei un preventivo per un lavaggio." // messaggio precompilato WhatsApp
+
+  // ── MODULO PREVENTIVI ────────────────────────────────────────────────
+  // Le richieste del modulo arrivano via email all'indirizzo in BIZ.email
+  // (idrobenwashing@gmail.com) tramite FormSubmit. NESSUNA chiave da inserire.
+  // Attivazione (una volta sola): la PRIMA volta che invii il modulo dal sito
+  // ONLINE ti arriva una mail di conferma da FormSubmit — clicca il link e da
+  // quel momento ricevi tutte le richieste sulla tua Gmail.
 };
 
 /* --- applica la configurazione al DOM --- */
@@ -691,19 +708,65 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
   measure();
 })();
 
-/* --- modulo -> WhatsApp --- */
-document.getElementById('sendWa').addEventListener('click', ()=>{
-  const nome = document.getElementById('f-nome').value.trim();
-  const tel  = document.getElementById('f-tel').value.trim();
-  const serv = document.getElementById('f-serv').value;
-  const msg  = document.getElementById('f-msg').value.trim();
-  let t = "Ciao " + BIZ.name + "! Vorrei un preventivo.";
-  if(nome) t += "\nNome: " + nome;
-  if(tel)  t += "\nTelefono: " + tel;
-  if(serv) t += "\nServizio: " + serv;
-  if(msg)  t += "\nDettagli: " + msg;
-  window.open("https://wa.me/" + BIZ.phoneIntl + "?text=" + encodeURIComponent(t), "_blank", "noopener");
-});
+/* --- modulo preventivi -> email (FormSubmit, senza chiave), con ripiego WhatsApp --- */
+(function(){
+  const form = document.getElementById('quoteForm');
+  const btn = document.getElementById('sendBtn');
+  const btnLabel = btn.querySelector('span');
+  const statusEl = document.getElementById('formStatus');
+  const $ = id => document.getElementById(id);
+
+  function setStatus(msg, type){
+    statusEl.textContent = msg;
+    statusEl.className = 'form-status show' + (type ? ' '+type : '');
+  }
+  function waFallback(){
+    let t = "Ciao " + BIZ.name + "! Vorrei un preventivo.";
+    const nome=$('f-nome').value.trim(), tel=$('f-tel').value.trim(), serv=$('f-serv').value, msg=$('f-msg').value.trim();
+    if(nome) t += "\nNome: " + nome;
+    if(tel)  t += "\nTelefono: " + tel;
+    if(serv) t += "\nServizio: " + serv;
+    if(msg)  t += "\nDettagli: " + msg;
+    window.open("https://wa.me/" + BIZ.phoneIntl + "?text=" + encodeURIComponent(t), "_blank", "noopener");
+  }
+
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    if(form.querySelector('[name="_honey"]').value) return;               // anti-spam
+    if(!form.checkValidity()){ form.reportValidity(); setStatus('Inserisci almeno nome e telefono.', 'err'); return; }
+
+    // Nessuna email impostata -> invia via WhatsApp
+    if(!BIZ.email){
+      setStatus('Ti portiamo su WhatsApp per inviare la richiesta…', 'ok');
+      waFallback();
+      return;
+    }
+
+    const data = new FormData(form);
+    data.append('_subject', 'Nuova richiesta di preventivo — sito Idroben');
+    data.append('_template', 'table');
+    data.append('_captcha', 'false');
+
+    const original = btnLabel.textContent;
+    btn.disabled = true; btnLabel.textContent = 'Invio in corso…'; setStatus('', '');
+    try{
+      const res = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(BIZ.email), {
+        method:'POST', headers:{ 'Accept':'application/json' }, body:data
+      });
+      const out = await res.json();
+      if(out.success === true || out.success === 'true'){
+        setStatus('Richiesta inviata! Ti ricontattiamo a breve.', 'ok'); form.reset();
+      } else {
+        setStatus('Invio non riuscito. Riprova o scrivici su WhatsApp.', 'err');
+      }
+    }catch(err){
+      setStatus('Connessione assente. Riprova o scrivici su WhatsApp.', 'err');
+    }finally{
+      btn.disabled = false; btnLabel.textContent = original;
+    }
+  });
+})();
+
 </script>
 </body>
 </html>
